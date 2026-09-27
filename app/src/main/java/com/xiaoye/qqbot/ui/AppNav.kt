@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.xiaoye.qqbot.ui.screens.AgentScreen
+import com.xiaoye.qqbot.ui.screens.BotScreen
 import com.xiaoye.qqbot.ui.screens.ChatScreen
 import com.xiaoye.qqbot.ui.screens.ModelScreen
 import com.xiaoye.qqbot.ui.screens.SettingsScreen
