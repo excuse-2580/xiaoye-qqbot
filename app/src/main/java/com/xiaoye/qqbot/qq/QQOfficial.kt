@@ -222,9 +222,11 @@ class QQOfficial(
     private fun parseOfficial(d: JSONObject): QQIncoming? {
         val isGroup = d.has("group_openid")
         val groupId = d.optString("group_openid").ifBlank { null }
-        val userId = d.optString("author", JSONObject())
-            .let { if (it.startsWith("{")) JSONObject(it).optString("id") else it }
-            .ifBlank { d.optString("user_openid") }
+        // author 有时是对象（带 id 字段），有时直接是 openid 字符串，两种都要兼容
+        val authorRaw = d.optString("author", "").ifBlank {
+            runCatching { d.optJSONObject("author")?.optString("id") }.getOrNull().orEmpty()
+        }
+        val userId = authorRaw.ifBlank { d.optString("user_openid") }
         val content = d.optString("content").trim()
         if (content.isBlank()) return null
 
