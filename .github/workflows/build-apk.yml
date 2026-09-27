@@ -81,6 +81,34 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      # 失败时把关键错误写回仓库，方便直接查看（该文件不触发构建）
+      - name: 把失败日志写回仓库
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "commit: ${GITHUB_SHA}"
+            echo "date:   $(date -u)"
+            echo
+            echo "=== What went wrong ==="
+            awk '/What went wrong:/{f=1} f{print; n++} n>40{exit}' build.log
+            echo
+            echo "=== Kotlin 错误 ==="
+            grep -E "^e: " build.log | head -60
+            echo
+            echo "=== CMake 错误 ==="
+            grep -m10 -B2 -A6 "CMake Error" build.log
+            echo
+            echo "=== 日志尾部 ==="
+            tail -80 build.log
+          } > "ci-fail-${GITHUB_RUN_NUMBER}.txt" 2>&1 || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "ci-fail-${GITHUB_RUN_NUMBER}.txt"
+          git commit -m "ci: 保存失败日志（自动）" || exit 0
+          git push
+
       - name: 上传 APK
         uses: actions/upload-artifact@v4
         with:
