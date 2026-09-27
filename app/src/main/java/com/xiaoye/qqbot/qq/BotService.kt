@@ -14,6 +14,8 @@ import com.xiaoye.qqbot.R
 import com.xiaoye.qqbot.data.ModelKind
 import com.xiaoye.qqbot.data.ModelSource
 import com.xiaoye.qqbot.data.QQBotConfig
+import com.xiaoye.qqbot.data.ChatMessage
+import com.xiaoye.qqbot.data.Prefs
 import com.xiaoye.qqbot.data.QQIncoming
 import com.xiaoye.qqbot.data.QQDecision
 import com.xiaoye.qqbot.data.QQMode
