@@ -63,7 +63,7 @@ class BotRules {
             }
             TriggerMode.KEYWORD -> {
                 val ks = cfg.keywords.lineSequence()
-                    .map { it.trim() }.filter { it.isNotEmpty() }
+                    .map { it.trim() }.filter { it.isNotEmpty() }.toList()
                 ks.isEmpty() || ks.any { text.contains(it) }
             }
             TriggerMode.ALL_GROUP -> true
