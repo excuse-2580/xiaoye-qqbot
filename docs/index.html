@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小夜 QQBot — 把大模型装进手机，离线跑 QQ 机器人</title>
+<meta name="description" content="小夜 QQBot：安卓端 QQ 机器人。llama.cpp 内置进 APK，手机本地离线跑 GGUF 模型，不依赖 Termux 与联网。支持 QQ 官方 API 与 OneBot 两种接入，密钥经 Android Keystore 加密。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ 顶部应用栏 ============ -->
+<header class="app-bar" id="appBar">
+  <div class="app-bar__title">
+    <span class="material-symbols-outlined" style="color:var(--md-primary)">smart_toy</span>
+    小夜 QQBot
+  </div>
+  <nav class="app-bar__nav">
+    <a href="#features">特性</a>
+    <a href="#models">模型</a>
+    <a href="#qq">QQ 接入</a>
+    <a href="#start">快速开始</a>
+    <button class="icon-btn" onclick="toggleTheme()" aria-label="切换深浅主题">
+      <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
+    </button>
+    <a class="btn btn--filled" href="#download">下载 APK</a>
+  </nav>
+</header>
+
+<!-- ============ Hero ============ -->
+<section class="hero">
+  <div class="wrap hero__inner">
+    <div>
+      <span class="chip chip--primary">
+        <span class="material-symbols-outlined" style="font-size:16px">bolt</span>
+        完全离线 · 不联网也能聊
+      </span>
+      <h1>把大模型<br>装进你的手机</h1>
+      <p>
+        小夜 QQBot 把 <strong>llama.cpp 直接编译进 APK</strong>，
+        手机选个 <code>.gguf</code> 就能本地推理——不依赖 Termux、不用连电脑、断网照常运行。
+        同时支持接入 QQ，让群里那个「小夜」24 小时在线。
+      </p>
+      <div class="hero__actions">
+        <a class="btn btn--filled btn--lg" href="#download">
+          <span class="material-symbols-outlined">download</span>
+          下载 APK
+        </a>
+        <a class="btn btn--outlined btn--lg" href="https://github.com/excuse-2580/xiaoye-qqbot">
+          <span class="material-symbols-outlined">code</span>
+          GitHub
+        </a>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="chip">Kotlin + Jetpack Compose</span>
+        <span class="chip">Material Design 3</span>
+        <span class="chip">arm64-v8a</span>
+      </div>
+    </div>
+
+    <!-- 手机预览：有截图就放，没有显示占位 -->
+    <div class="phone">
+      <div class="phone__screen">
+        <img src="screenshot-chat.png" alt="小夜 QQBot 对话界面"
+             onerror="this.style.display='none';this.parentNode.style.background='var(--md-surface-container-high)';
+                      this.parentNode.innerHTML='<div style=\'display:grid;place-items:center;height:100%;padding:24px;text-align:center;color:var(--md-on-surface-variant);font-size:13px\'><div><span class=\'material-symbols-outlined\' style=\'font-size:40px;color:var(--md-primary)\'>smart_toy</span><div style=\'margin-top:12px\'>小夜 QQBot</div></div></div>'">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 特性 ============ -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:18px">stars</span>核心特性</div>
+    <h2>为什么它不靠云端也能跑</h2>
+    <p class="lede">
+      推理引擎不是外挂、不是命令行工具，而是通过 JNI 桥编进 APK 的原生库，
+      和 App 同一个进程里跑。
+    </p>
+
+    <div class="grid grid--3" style="margin-top:32px">
+      <div class="card card--elevated">
+        <div class="card__icon"><span class="material-symbols-outlined">memory</span></div>
+        <h3>llama.cpp 内置</h3>
+        <p>
+          <code>ggml_jni.cpp</code> 经 CMake 链成单个 <code>libggml-jni.so</code>。
+          勾选「用手机本地 GGUF」→ 选文件 → 点加载，即可离线 CPU 推理。
+        </p>
+      </div>
+
+      <div class="card card--elevated">
+        <div class="card__icon"><span class="material-symbols-outlined">tune</span></div>
+        <h3>采样链自己实现</h3>
+        <p>
+          temperature → top-k → top-p → 重复惩罚 → 多项式采样，
+          加上 ChatML 模板拼装与停止词截断，参数全部可调。
+        </p>
+      </div>
+
+      <div class="card card--elevated">
+        <div class="card__icon"><span class="material-symbols-outlined">key</span></div>
+        <h3>密钥加密存储</h3>
+        <p>
+          API Key 走 Android Keystore 的 AES-256-GCM 加密，
+          明文不落盘，每次加密随机 IV。
+        </p>
+      </div>
+
+      <div class="card card--elevated">
+        <div class="card__icon"><span class="material-symbols-outlined">forum</span></div>
+        <h3>三种 QQ 接入</h3>
+        <p>
+          QQ 官方 API（合规稳定）／OneBot 反向 WS（推荐）／OneBot HTTP 上报，
+          按需切换。
+        </p>
+      </div>
+
+      <div class="card card--elevated">
+        <div class="card__icon"><span class="material-symbols-outlined">shield</span></div>
+        <h3>四层消息过滤</h3>
+        <p>
+          去重 → 群白名单 → 冷却 → 触发规则，
+          配上限流与分段发送，既防刷屏也躲风控。
+        </p>
+      </div>
+
+      <div class="card card--elevated">
+        <div class="card__icon"><span class="material-symbols-outlined">cloud</span></div>
+        <h3>云端随时切换</h3>
+        <p>
+          本地慢的时候切云端：DeepSeek、Kimi、智谱、硅基流动、OpenAI、
+          Ollama、llama.cpp server、腾讯混元，一键填写。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模型推荐 ============ -->
+<section id="models" style="background:var(--md-surface-container)">
+  <div class="wrap">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:18px">model_training</span>模型选择</div>
+    <h2>手机该挑多大的模型</h2>
+    <p class="lede">
+      手机没有独立显存，也没有风扇，跑久了会发热降频。
+      所以这里是 <strong>1B–3B 的舞台</strong>，7B 以上留给电脑。
+    </p>
+
+    <div class="table-wrap" style="margin-top:28px">
+      <table>
+        <thead>
+          <tr><th>模型</th><th>体积</th><th>内存要求</th><th>体验</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Qwen2.5-1.5B-Instruct-Q4_K_M</strong><br><span class="chip chip--primary" style="margin-top:6px">默认推荐</span></td>
+            <td>约 1 GB</td>
+            <td>4 GB+</td>
+            <td>中文好，短问答、翻译、润色流畅</td>
+          </tr>
+          <tr>
+            <td>Qwen2.5-0.5B-Instruct-Q4_K_M</td>
+            <td>约 0.4 GB</td>
+            <td>3 GB+</td>
+            <td>内存吃紧就换它，速度最快但能力有限</td>
+          </tr>
+          <tr>
+            <td>Qwen2.5-3B / Llama-3.2-3B Q4_K_M</td>
+            <td>约 2 GB</td>
+            <td>8 GB+</td>
+            <td>旗舰机可用，长文本会明显变慢</td>
+          </tr>
+          <tr>
+            <td style="color:var(--md-error)">7B 及以上</td>
+            <td>4 GB+</td>
+            <td>12 GB+</td>
+            <td>能加载，但慢到几乎没法聊，<strong>不推荐</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:20px">
+      量化统一选 <code>Q4_K_M</code>——体积和质量的甜点。
+      在 HuggingFace 下载，国内打不开就把网址里的
+      <code>huggingface.co</code> 换成 <code>hf-mirror.com</code>。
+    </p>
+  </div>
+</section>
+
+<!-- ============ QQ 接入 ============ -->
+<section id="qq">
+  <div class="wrap">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:18px">hub</span>QQ 接入</div>
+    <h2>三种接法，各有权衡</h2>
+    <p class="lede">
+      合规优先就走官方，图省事就用反向 WS。
+      第三方协议那栏请务必先看下面的风险提示。
+    </p>
+
+    <div class="grid grid--3" style="margin-top:32px">
+      <div class="card card--outlined">
+        <div class="card__icon"><span class="material-symbols-outlined">verified</span></div>
+        <h3>QQ 官方 API</h3>
+        <p>
+          在 <strong>q.qq.com</strong> 创建机器人，拿到 AppID 与密钥填进 App。
+          腾讯官方通道，合规稳定，适合长期运行。<br><br>
+          <span class="chip chip--primary">推荐长期使用</span>
+        </p>
+      </div>
+
+      <div class="card card--outlined">
+        <div class="card__icon"><span class="material-symbols-outlined">swap_horiz</span></div>
+        <h3>OneBot 反向 WS</h3>
+        <p>
+          在协议端（Lagrange／LLOneBot／NapCat 等）开启反向 WebSocket，
+          App 主动连出去。不用暴露端口、不用内网穿透。<br><br>
+          <span class="chip">配置最简单</span>
+        </p>
+      </div>
+
+      <div class="card card--outlined">
+        <div class="card__icon"><span class="material-symbols-outlined">http</span></div>
+        <h3>OneBot HTTP 上报</h3>
+        <p>
+          协议端把消息 POST 到手机监听端口。上报只负责收，
+          发消息要反过来调协议端的 HTTP API，两个地址都要填。<br><br>
+          <span class="chip">需同一局域网</span>
+        </p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:40px;font-size:20px;font-weight:500">消息规则与限流</h3>
+    <div class="grid grid--2" style="margin-top:16px">
+      <div class="card card--filled">
+        <h3>触发规则</h3>
+        <p>
+          仅 @机器人（最安静）／前缀触发（如「小夜」或「!」）／关键词／群里全回。
+          群白名单按群号放行，留空即全部放行。
+        </p>
+      </div>
+      <div class="card card--filled">
+        <h3>去重与分段</h3>
+        <p>
+          同一个 <code>message_id</code> 在窗口期内只处理一次，防协议端重复上报；
+          长回复按字数切成多段，段间留间隔，模拟真人打字。
+        </p>
+      </div>
+      <div class="card card--filled">
+        <h3>冷却与并发</h3>
+        <p>
+          同一个群／人的两次回复之间有最小间隔，防止刷屏；
+          同时处理的消息数有上限，超了直接丢弃，避免把手机 CPU 打满。
+        </p>
+      </div>
+      <div class="card card--filled">
+        <h3>密钥安全</h3>
+        <p>
+          Token 与 API Key 经 Android Keystore（AES-256-GCM）加密后落盘，
+          明文不写入存储；旧版本存过的明文会读取时自动升级。
+        </p>
+      </div>
+    </div>
+
+    <div class="banner" style="margin-top:32px">
+      <span class="material-symbols-outlined">warning</span>
+      <div>
+        <h4>关于 OneBot 的封号风险</h4>
+        <p>
+          OneBot 属于第三方协议，腾讯并未授权，使用它存在<strong>封号风险</strong>。
+          强烈建议<strong>用小号测试</strong>，不要拿常用的大号冒险。
+          若要长期稳定运行，请走 QQ 官方 API。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 快速开始 ============ -->
+<section id="start" style="background:var(--md-surface-container)">
+  <div class="wrap">
+    <div class="section-label"><span class="material-symbols-outlined" style="font-size:18px">rocket_launch</span>快速开始</div>
+    <h2>四步跑起来</h2>
+
+    <div class="steps" style="margin-top:28px">
+      <div class="step">
+        <div class="step__body">
+          <h4>装 APK</h4>
+          <p>下载 <code>app-debug.apk</code> 装到安卓手机（Android 8.0+／arm64）。提示「未知来源」时允许一次即可。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__body">
+          <h4>下模型</h4>
+          <p>下载推荐的 <code>Qwen2.5-1.5B-Instruct-Q4_K_M</code>（约 1 GB），传到手机。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__body">
+          <h4>选文件并加载</h4>
+          <p>打开 App →「模型」→ 勾选「用手机本地 GGUF」→ 选 <code>.gguf</code> → 点「加载」，等状态变「已就绪」。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__body">
+          <h4>接入 QQ（可选）</h4>
+          <p>「机器人」页选接入方式、填参数、设触发规则，点「启动」。App 会以前台服务常驻，锁屏也不断。</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:40px;font-size:20px;font-weight:500">想自己编译？</h3>
+    <pre style="margin-top:12px">git clone https://github.com/excuse-2580/xiaoye-qqbot
+cd xiaoye-qqbot
+./scripts/fetch-llama-cpp.sh      # 拉 llama.cpp 源码
+# 用 Android Studio 打开，或命令行：
+./gradlew assembleDebug</pre>
+    <p style="margin-top:12px;font-size:14px;color:var(--md-on-surface-variant)">
+      或者什么都不用装：仓库已配置 GitHub Actions，
+      push 后云端自动编译并把 APK 发到 Releases。
+    </p>
+  </div>
+</section>
+
+<!-- ============ 下载 ============ -->
+<section id="download">
+  <div class="wrap" style="text-align:center">
+    <div class="section-label" style="justify-content:center">
+      <span class="material-symbols-outlined" style="font-size:18px">download</span>下载
+    </div>
+    <h2>现在就让小夜住进手机</h2>
+    <p class="lede" style="margin:0 auto 28px">
+      APK 由 GitHub Actions 自动构建，内含 llama.cpp 推理引擎。
+      模型文件不包含在内，需单独下载。
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn--filled btn--lg"
+         href="https://github.com/excuse-2580/xiaoye-qqbot/releases/download/native-latest/app-debug.apk">
+        <span class="material-symbols-outlined">android</span>
+        下载 APK
+      </a>
+      <a class="btn btn--tonal btn--lg" href="https://github.com/excuse-2580/xiaoye-qqbot/releases">
+        <span class="material-symbols-outlined">inventory_2</span>
+        全部版本
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 页脚 ============ -->
+<footer>
+  <div class="wrap">
+    <div>小夜 QQBot · 开源于 GitHub · 采用 Material Design 3</div>
+    <div>
+      <a href="https://github.com/excuse-2580/xiaoye-qqbot">源码</a> ·
+      <a href="https://github.com/excuse-2580/xiaoye-qqbot/releases">下载</a> ·
+      <a href="https://github.com/excuse-2580/xiaoye-qqbot/issues">反馈</a>
+    </div>
+  </div>
+</footer>
+
+<button class="fab" id="fab" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="回到顶部">
+  <span class="material-symbols-outlined">arrow_upward</span>
+</button>
+
+<script src="script.js"></script>
+</body>
+</html>

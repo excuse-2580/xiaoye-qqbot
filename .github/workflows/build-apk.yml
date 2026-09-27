@@ -1,0 +1,121 @@
+name: Build APK (llama.cpp + JNI)
+
+# GitHub 云端编译：自带 JDK / Android SDK / NDK / CMake，
+# 会把 llama.cpp 交叉编译进 APK，产物自动发到 Releases。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# 防止连续 push 触发多个 run 抢同一个 Release
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # ubuntu-latest 自带 Android SDK + NDK + cmake；
+      # 别用第三方 setup-android action，在云机器上会自己跑挂
+      - name: 检查 Android 环境
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" 2>/dev/null | head
+          ls "$ANDROID_HOME/ndk" 2>/dev/null || echo "（无 ndk 目录，Gradle 会自己装）"
+          cmake --version | head -1
+          # 新版 AndroidX 依赖普遍要求 compileSdk 35，缺就装
+          if [ ! -d "$ANDROID_HOME/platforms/android-35" ] && \
+             [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+              --install "platforms;android-35" "build-tools;35.0.0" 2>&1 | tail -3
+          fi
+
+      - name: Gradle 缓存
+        uses: gradle/actions/setup-gradle@v4
+
+      # llama.cpp 源码不进仓库（太大），编译时现拉。
+      # 锁 commit：上游 API 改得勤，不锁哪天就编不过了
+      - name: 拉取 llama.cpp
+        env:
+          LLAMA_CPP_REF: 2b129ccfa03aea330d2d9ac4650a10de393dbe3a
+        run: bash scripts/fetch-llama-cpp.sh
+
+      - name: 授权 gradlew
+        run: chmod +x gradlew
+
+      - name: 编译 Debug APK
+        run: |
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+          test ${PIPESTATUS[0]} -eq 0
+
+      - name: 上传编译日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xiaoye-qqbot-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 发布到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: native-latest
+          name: "小夜 QQBot · 安卓 APK（含 llama.cpp）"
+          body: |
+            GitHub Actions 自动编译，提交 ${{ github.sha }}
+
+            ## 装到手机
+            下载 app-debug.apk 传到手机安装（提示「未知来源」时允许一次）。
+
+            ## 离线跑模型
+            1. 下载 Qwen2.5-1.5B-Instruct-Q4_K_M（约 1GB）放到手机
+               （HuggingFace 打不开就把 huggingface.co 换成 hf-mirror.com）
+            2. 打开 App →「模型」→ 选 .gguf → 点「加载」
+            3. 状态变「已就绪」后，回「对话」页即可离线聊天
+
+            ## 接入 QQ
+            「机器人」页选择接入方式（官方 API / OneBot 反向WS / OneBot 上报），
+            填好参数与触发规则后点「启动」。
+            ⚠️ OneBot 属第三方协议，有封号风险，请用小号测试。
+
+            ## 云端模型
+            DeepSeek / Kimi / 智谱 / 硅基流动 / OpenAI / Ollama /
+            llama.cpp server / 腾讯混元（SecretId:SecretKey）一键填写。
+          files: app/build/outputs/apk/debug/*.apk
+          prerelease: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
