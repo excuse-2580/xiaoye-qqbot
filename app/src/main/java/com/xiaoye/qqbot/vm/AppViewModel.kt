@@ -9,6 +9,7 @@ import com.xiaoye.qqbot.data.ChatMessage
 import com.xiaoye.qqbot.data.ModelKind
 import com.xiaoye.qqbot.data.ModelSource
 import com.xiaoye.qqbot.data.Prefs
+import com.xiaoye.qqbot.data.QQBotConfig
 import com.xiaoye.qqbot.engine.CloudEngine
 import com.xiaoye.qqbot.engine.DEFAULT_STOP_WORDS
 import com.xiaoye.qqbot.engine.IM_START
