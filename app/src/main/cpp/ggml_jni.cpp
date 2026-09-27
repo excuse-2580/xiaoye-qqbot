@@ -171,7 +171,18 @@ static std::string piece_to_string(const llama_vocab *vocab, llama_token id) {
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeLoad(JNIEnv *env, jobject,
+/* ⚠️⚠️⚠️ 改包名时必看 ⚠️⚠️⚠️
+ *
+ * 下面所有函数名里的 com_xiaoye_qqbot 必须跟 Kotlin 侧的包名严格对应：
+ *     com.xiaoye.qqbot.engine.LlmEngine  ->  Java_com_xiaoye_qqbot_engine_LlmEngine_xxx
+ *     （包名里的 . 变成 _，类名前的 / 也变成 _）
+ *
+ * 只要改了 applicationId 或把 LlmEngine 挪到别的包，这里就得同步改；
+ * 否则编译能过、安装能跑，但一加载模型就抛
+ *     java.lang.UnsatisfiedLinkError: No implementation found for ...
+ * 因为 JVM 是按 "Java_<包名>_<类名>_<方法名>" 这个全名去 so 里找符号的。
+ */
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeLoad(JNIEnv *env, jobject,
                                                     jstring jpath, jint n_ctx,
                                                     jint n_threads, jboolean use_mmap) {
     const char *path = env->GetStringUTFChars(jpath, nullptr);
@@ -218,7 +229,7 @@ Java_com_excuse2580_aas_engine_LlmEngine_nativeLoad(JNIEnv *env, jobject,
 }
 
 JNIEXPORT void JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeFree(JNIEnv *, jobject, jlong handle) {
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeFree(JNIEnv *, jobject, jlong handle) {
     if (!handle) return;
     std::lock_guard<std::mutex> lk(g_mutex);
     Engine *e = (Engine *)handle;
@@ -230,7 +241,7 @@ Java_com_excuse2580_aas_engine_LlmEngine_nativeFree(JNIEnv *, jobject, jlong han
 
 /** 清空 KV cache，重新开始一轮对话 */
 JNIEXPORT void JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeReset(JNIEnv *, jobject, jlong handle) {
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeReset(JNIEnv *, jobject, jlong handle) {
     if (!handle) return;
     Engine *e = (Engine *)handle;
     // 新版把 KV cache 抽象成 llama_memory_t，没有 llama_kv_cache_clear 了
@@ -242,23 +253,23 @@ Java_com_excuse2580_aas_engine_LlmEngine_nativeReset(JNIEnv *, jobject, jlong ha
 }
 
 JNIEXPORT void JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeStop(JNIEnv *, jobject, jlong handle) {
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeStop(JNIEnv *, jobject, jlong handle) {
     if (!handle) return;
     ((Engine *)handle)->stop = true;
 }
 
 JNIEXPORT jint JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeVocabSize(JNIEnv *, jobject, jlong handle) {
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeVocabSize(JNIEnv *, jobject, jlong handle) {
     return handle ? llama_vocab_n_tokens(((Engine *)handle)->vocab) : 0;
 }
 
 JNIEXPORT jint JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeEosToken(JNIEnv *, jobject, jlong handle) {
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeEosToken(JNIEnv *, jobject, jlong handle) {
     return handle ? (jint)llama_vocab_eos(((Engine *)handle)->vocab) : -1;
 }
 
 JNIEXPORT jint JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeContextSize(JNIEnv *, jobject, jlong handle) {
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeContextSize(JNIEnv *, jobject, jlong handle) {
     return handle ? (jint)llama_n_ctx(((Engine *)handle)->ctx) : 0;
 }
 
@@ -267,7 +278,7 @@ Java_com_excuse2580_aas_engine_LlmEngine_nativeContextSize(JNIEnv *, jobject, jl
  * 比每轮重发整个对话快得多。返回实际吃进去的 token 数，失败返回 -1。
  */
 JNIEXPORT jint JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeEvalPrompt(JNIEnv *env, jobject, jlong handle,
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeEvalPrompt(JNIEnv *env, jobject, jlong handle,
                                                           jstring jtext) {
     if (!handle) return -1;
     Engine *e = (Engine *)handle;
@@ -299,7 +310,7 @@ Java_com_excuse2580_aas_engine_LlmEngine_nativeEvalPrompt(JNIEnv *env, jobject, 
  * 回调返回 false（或 nativeStop 被调用）立即停止。
  */
 JNIEXPORT jstring JNICALL
-Java_com_excuse2580_aas_engine_LlmEngine_nativeGenerate(JNIEnv *env, jobject, jlong handle,
+Java_com_xiaoye_qqbot_engine_LlmEngine_nativeGenerate(JNIEnv *env, jobject, jlong handle,
                                                         jfloat temp, jfloat top_p, jint top_k,
                                                         jfloat repeat_penalty, jint repeat_window,
                                                         jint max_tokens, jlong seed,
